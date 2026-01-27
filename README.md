@@ -16,7 +16,7 @@ All examples are intentionally explicit and do **not** hide protocol steps behin
 - `src/feide_data_source_api/` – OAuth2-protected API (data source)
 - `tests/` – pytest unit tests (network calls are mocked)
 
-## Requirements (both examples)
+## Requirements (all examples)
 
 - Python **3.13**
 - A registered Feide OIDC client (client id / secret)
@@ -34,7 +34,7 @@ cp .env.example .env
 Then run the examples with `./run_feide_login_full.zsh`, `./run_feide_login_simple.zsh`, or
 `./run_feide_data_source_api.zsh`.
 
-## Configuration (both examples)
+## Configuration (all examples)
 
 These environment variables should be configured in .env.
 
@@ -61,7 +61,7 @@ Only for `feide_data_source_api`:
 - `DATASOURCE_CLIENT_ID` (client id configured for the data source)
 - `DATASOURCE_CLIENT_SECRET` (client secret configured for the data source)
 - `DATASOURCE_TOKEN_EXCHANGE_AUDIENCE` (audience to request via token exchange for Feide APIs)
-- `DATASOURCE_TOKEN_EXCHANGE_SCOPE` (scope to request via token exchange, e.g. `readUser`)
+- `DATASOURCE_TOKEN_EXCHANGE_SCOPE` (optional; scope to request via token exchange, e.g. `readUser`)
 
 Optional (used by `feide_login_full` and `feide_data_source_api`):
 
@@ -86,7 +86,7 @@ pip install -e ".[dev]"
 
 ## Example: feide_login_full (production-minded)
 
-Note that the example does not use a third party OIDC libarary. In general it is recommended to use certified libraries for production code. 
+Note that the example does not use a third party OIDC library. In general it is recommended to use certified libraries for production code. 
 
 This example includes:
 
@@ -140,7 +140,7 @@ pytest
 ## Core package
 
 `feide_login_core` holds the shared (production-ready) pieces (OIDC discovery, token calls, JWT validation,
-PKCE helpers, and JSON parsing). The full example re-exports these helpers for readability, and the
+PKCE helpers, and JSON parsing). The full example imports these helpers directly, and the
 simple example uses the same core to keep its code minimal while still showing the protocol steps.
 
 ## Token exchange variants

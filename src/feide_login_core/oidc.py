@@ -44,6 +44,7 @@ class OIDCClient:
         return doc
 
     def fetch_jwks(self) -> Mapping[str, object]:
+        # Note: For production a TTL should be added for JWKS caching.
         if self._jwks_cache is not None:
             return self._jwks_cache
 
@@ -137,9 +138,7 @@ class OIDCClient:
             timeout=self.http_timeout_s,
         )
         if resp.status_code != 200:
-            raise OIDCError(
-                "token exchange failed " f"({resp.status_code}): {resp.text}. " f"params={data}"
-            )
+            raise OIDCError(f"token exchange failed ({resp.status_code}): {resp.text}")
         return TokenExchangeResponse.from_json(
             json_object_from_response(resp, error="Token exchange response is not a JSON object")
         )
