@@ -22,8 +22,6 @@ from feide_login_core.json_utils import require_json_array
 from feide_login_core.jwt_validation import AccessTokenValidationError, validate_access_token
 from feide_login_core.oidc import OIDCClient, OIDCError
 
-# pyright: reportUnusedFunction=false
-
 
 def _json_response(data: Any, *, status: int = 200) -> Response:
     return Response(
