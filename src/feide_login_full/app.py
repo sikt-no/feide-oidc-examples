@@ -4,8 +4,8 @@ Routes:
 - /              Home (shows session status)
 - /login         Starts OIDC Authorization Code + PKCE
 - /callback      Handles redirect, validates ID token, fetches userinfo
-- /logout        Clears session and redirects to the IdP logout endpoint (if available)
-- /post-logout   Landing endpoint after IdP logout
+- /logout        Clears session and redirects to the Feide logout endpoint (if available)
+- /post-logout   Landing endpoint after Feide logout
 - /exchange      Demonstrates token exchange (requires env vars for audience/scope)
 - /datasource    Calls the data source API with the exchanged token
 
@@ -104,7 +104,7 @@ def create_app(settings: Settings) -> Flask:
 
     @app.get("/login")
     def login():
-        # Step 1: start authorization code + PKCE by redirecting to the IdP.
+        # Step 1: start authorization code + PKCE by redirecting to Feide.
         verifier, challenge = generate_pkce()
         state = secrets.token_urlsafe(16)
         nonce = secrets.token_urlsafe(16)
@@ -134,7 +134,7 @@ def create_app(settings: Settings) -> Flask:
 
     @app.get("/callback")
     def callback():
-        # Step 2: handle IdP redirect, exchange code for tokens, validate ID token.
+        # Step 2: handle Feide redirect, exchange code for tokens, validate ID token.
         if request.args.get("state") != session.get("state"):
             print(
                 "state mismatch",
@@ -264,7 +264,7 @@ def create_app(settings: Settings) -> Flask:
                 "<p>Set FEIDE_TOKEN_EXCHANGE_AUDIENCE.</p>" "<p><a href='/'>Return home</a></p>",
                 status=400,
             )
-        # If scope is empty, request all scopes.
+        # If scope is empty, all available scopes will be requested.
         exchange_scope = settings.token_exchange_scope or ""
 
         try:
@@ -351,7 +351,7 @@ def create_app(settings: Settings) -> Flask:
 
     @app.get("/logout")
     def logout():
-        # Optional step: end session locally and initiate IdP logout if supported.
+        # Optional step: end session locally and initiate Feide logout.
         try:
             end_session_endpoint = oidc.discover_configuration().end_session_endpoint
         except OIDCError as exc:
@@ -382,7 +382,7 @@ def create_app(settings: Settings) -> Flask:
 
     @app.get("/post-logout")
     def post_logout():
-        # Final step: user returns here after IdP logout.
+        # Final step: user returns here after Feide logout.
         session.clear()
         return (
             "You have been logged out. " "<a href='/'>Log in again</a>.",
