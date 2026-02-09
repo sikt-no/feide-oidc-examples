@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import secrets
+from http import HTTPStatus
 
 import requests
 from flask import Flask, redirect, request, session, url_for
@@ -61,22 +62,22 @@ def create_app() -> Flask:
             requests.Request("GET", config["authorization_endpoint"], params=params).prepare().url
         )
         if not request_url:
-            return "Failed to construct authorization request URL", 500
+            return "Failed to construct authorization request URL", HTTPStatus.INTERNAL_SERVER_ERROR
         return redirect(request_url)
 
     @app.get("/callback")
     def callback():
         # Step 3: Validate the state returned to the redirect URI.
         if request.args.get("state") != session.get("state"):
-            return "Invalid state", 400
+            return "Invalid state", HTTPStatus.BAD_REQUEST
 
         code = request.args.get("code")
         if not code:
-            return "Missing authorization code", 400
+            return "Missing authorization code", HTTPStatus.BAD_REQUEST
 
         verifier = session.get("pkce_verifier")
         if not isinstance(verifier, str):
-            return "Missing PKCE verifier in session", 400
+            return "Missing PKCE verifier in session", HTTPStatus.BAD_REQUEST
 
         # Step 4: Exchange the authorization code and verifier for tokens at the token endpoint in Feide.
         token_response = exchange_code_for_tokens(code=code, code_verifier=verifier)

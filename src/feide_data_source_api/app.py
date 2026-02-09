@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import json
 from collections.abc import Mapping
+from http import HTTPStatus
 from typing import Any, cast
 
 import requests
@@ -23,7 +24,7 @@ from feide_login_core.jwt_validation import AccessTokenValidationError, validate
 from feide_login_core.oidc import OIDCClient, OIDCError
 
 
-def _json_response(data: Any, *, status: int = 200) -> Response:
+def _json_response(data: Any, *, status: int = HTTPStatus.OK) -> Response:
     return Response(
         json.dumps(data, indent=2, sort_keys=True), status=status, mimetype="application/json"
     )
@@ -64,7 +65,7 @@ def create_app(settings: Settings) -> Flask:
     def me():
         access_token = _extract_bearer_token()
         if not access_token:
-            return "Missing Bearer token", 401
+            return "Missing Bearer token", HTTPStatus.UNAUTHORIZED
 
         try:
             claims = validate_access_token(
@@ -74,10 +75,10 @@ def create_app(settings: Settings) -> Flask:
                 audience=settings.datasource_audience,
             )
         except (AccessTokenValidationError, OIDCError) as exc:
-            return f"Invalid access token: {exc}", 401
+            return f"Invalid access token: {exc}", HTTPStatus.UNAUTHORIZED
 
         if not _has_scope(claims, settings.required_scope):
-            return f"Missing required scope: {settings.required_scope}", 403
+            return f"Missing required scope: {settings.required_scope}", HTTPStatus.FORBIDDEN
 
         try:
             exchanged = oidc.token_exchange(
@@ -88,7 +89,7 @@ def create_app(settings: Settings) -> Flask:
                 requested_token_type="urn:ietf:params:oauth:token-type:access_token",
             )
         except OIDCError as exc:
-            return f"token exchange error: {exc}", 502
+            return f"token exchange error: {exc}", HTTPStatus.BAD_GATEWAY
 
         try:
             extended_userinfo = oidc.extended_userinfo(
@@ -96,15 +97,18 @@ def create_app(settings: Settings) -> Flask:
                 extended_userinfo_url=settings.extended_userinfo_url,
             )
         except OIDCError as exc:
-            return f"extended userinfo error: {exc}", 502
+            return f"extended userinfo error: {exc}", HTTPStatus.BAD_GATEWAY
 
         groupinfo_resp = requests.get(
             settings.groupinfo_url,
             headers={"Authorization": f"Bearer {exchanged.access_token}"},
             timeout=settings.http_timeout_s,
         )
-        if groupinfo_resp.status_code != 200:
-            return f"groupinfo error ({groupinfo_resp.status_code}): {groupinfo_resp.text}", 502
+        if groupinfo_resp.status_code != HTTPStatus.OK:
+            return (
+                f"groupinfo error ({groupinfo_resp.status_code}): {groupinfo_resp.text}",
+                HTTPStatus.BAD_GATEWAY,
+            )
         groupinfo = require_json_array(
             groupinfo_resp.json(), error="groupinfo response is not a JSON array"
         )

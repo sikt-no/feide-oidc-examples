@@ -5,12 +5,13 @@ from __future__ import annotations
 import html
 import json
 from collections.abc import Mapping
+from http import HTTPStatus
 from typing import cast
 
 from flask import Response
 
 
-def html_page(title: str, body: str, *, status: int = 200) -> Response:
+def html_page(title: str, body: str, *, status: int = HTTPStatus.OK) -> Response:
     home_link = "<p><a href='/'>Return home</a></p>"
     html = (
         "<!doctype html>"
@@ -28,7 +29,9 @@ def html_page(title: str, body: str, *, status: int = 200) -> Response:
     return Response(html, status=status, mimetype="text/html")
 
 
-def render_json_page(title: str, data: Mapping[str, object], *, status: int = 200) -> Response:
+def render_json_page(
+    title: str, data: Mapping[str, object], *, status: int = HTTPStatus.OK
+) -> Response:
     payload = json.dumps(data, indent=2, sort_keys=True)
     body = f"<pre>{html.escape(payload)}</pre>"
     return html_page(title, body, status=status)

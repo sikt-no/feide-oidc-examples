@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import dataclass
+from http import HTTPStatus
 
 import requests
 
@@ -16,6 +17,8 @@ from feide_login_core.oidc_models import DiscoveryDocument, TokenExchangeRespons
 
 class OIDCError(RuntimeError):
     pass
+
+
 
 
 @dataclass(frozen=True)
@@ -30,12 +33,13 @@ class OIDCClient:
     _jwks_cache: Mapping[str, object] | None = None
 
     def discover_configuration(self) -> DiscoveryDocument:
+        # Production note: add a TTL and refresh logic for metadata caching.
         if self._discovery_cache is not None:
             return self._discovery_cache
 
         url = f"{self.issuer.rstrip('/')}/.well-known/openid-configuration"
         resp = requests.get(url, timeout=self.http_timeout_s)
-        if resp.status_code != 200:
+        if resp.status_code != HTTPStatus.OK:
             raise OIDCError(f"Discovery failed ({resp.status_code}): {resp.text}")
         doc = DiscoveryDocument.from_json(
             json_object_from_response(resp, error="Discovery response is not a JSON object")
@@ -44,13 +48,13 @@ class OIDCClient:
         return doc
 
     def fetch_jwks(self) -> Mapping[str, object]:
-        # Note: For production a TTL should be added for JWKS caching.
+        # Production note: add a TTL and refresh on unknown kid for JWKS caching.
         if self._jwks_cache is not None:
             return self._jwks_cache
 
         jwks_uri = self.discover_configuration().jwks_uri
         resp = requests.get(jwks_uri, timeout=self.http_timeout_s)
-        if resp.status_code != 200:
+        if resp.status_code != HTTPStatus.OK:
             raise OIDCError(f"JWKS fetch failed ({resp.status_code}): {resp.text}")
         jwks = json_object_from_response(resp, error="JWKS response is not a JSON object")
         if "keys" not in jwks:
@@ -71,7 +75,7 @@ class OIDCClient:
             auth=(self.client_id, self.client_secret),
             timeout=self.http_timeout_s,
         )
-        if resp.status_code != 200:
+        if resp.status_code != HTTPStatus.OK:
             raise OIDCError(f"Token call failed ({resp.status_code}): {resp.text}")
         return TokenResponse.from_json(
             json_object_from_response(resp, error="Token response is not a JSON object")
@@ -85,7 +89,7 @@ class OIDCClient:
             headers={"Authorization": f"Bearer {access_token}"},
             timeout=self.http_timeout_s,
         )
-        if resp.status_code != 200:
+        if resp.status_code != HTTPStatus.OK:
             raise OIDCError(f"userinfo failed ({resp.status_code}): {resp.text}")
         return json_object_from_response(resp, error="userinfo response is not a JSON object")
 
@@ -98,7 +102,7 @@ class OIDCClient:
             headers={"Authorization": f"Bearer {access_token}"},
             timeout=self.http_timeout_s,
         )
-        if resp.status_code != 200:
+        if resp.status_code != HTTPStatus.OK:
             raise OIDCError(f"extended userinfo failed ({resp.status_code}): {resp.text}")
         return json_object_from_response(
             resp, error="extended userinfo response is not a JSON object"
@@ -137,7 +141,7 @@ class OIDCClient:
             auth=(self.client_id, self.client_secret),
             timeout=self.http_timeout_s,
         )
-        if resp.status_code != 200:
+        if resp.status_code != HTTPStatus.OK:
             raise OIDCError(f"token exchange failed ({resp.status_code}): {resp.text}")
         return TokenExchangeResponse.from_json(
             json_object_from_response(resp, error="Token exchange response is not a JSON object")

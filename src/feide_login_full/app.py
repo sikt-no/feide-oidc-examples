@@ -17,6 +17,7 @@ This sample is intentionally explicit. No third-party OIDC libraries are used.
 from __future__ import annotations
 
 import secrets
+from http import HTTPStatus
 from typing import cast
 from urllib.parse import urlencode
 
@@ -43,13 +44,18 @@ def _require_logged_in_user() -> dict[str, object] | Response:
         return html_page(
             "Not logged in",
             "<p>You are not logged in.</p><p><a href='/'>Return home</a></p>",
-            status=401,
+            status=HTTPStatus.UNAUTHORIZED,
         )
     return cast(dict[str, object], user)
 
 
 def _require_token(
-    user_dict: dict[str, object], *, key: str, title: str, message: str, status: int = 400
+    user_dict: dict[str, object],
+    *,
+    key: str,
+    title: str,
+    message: str,
+    status: int = HTTPStatus.BAD_REQUEST,
 ) -> str | Response:
     value = user_dict.get(key)
     if not isinstance(value, str) or not value:
@@ -127,7 +133,7 @@ def create_app(settings: Settings) -> Flask:
             return html_page(
                 "Discovery failed",
                 f"<p>{exc}</p><p><a href='/'>Return home</a></p>",
-                status=500,
+                status=HTTPStatus.INTERNAL_SERVER_ERROR,
             )
 
         return redirect(request_url)
@@ -146,7 +152,7 @@ def create_app(settings: Settings) -> Flask:
             return html_page(
                 "Invalid state",
                 "<p>Invalid state in callback.</p><p><a href='/'>Return home</a></p>",
-                status=400,
+                status=HTTPStatus.BAD_REQUEST,
             )
 
         code = request.args.get("code")
@@ -154,7 +160,7 @@ def create_app(settings: Settings) -> Flask:
             return html_page(
                 "Missing authorization code",
                 "<p>Missing authorization code.</p><p><a href='/'>Return home</a></p>",
-                status=400,
+                status=HTTPStatus.BAD_REQUEST,
             )
 
         verifier = session.get("pkce_verifier")
@@ -162,7 +168,7 @@ def create_app(settings: Settings) -> Flask:
             return html_page(
                 "Missing PKCE verifier",
                 "<p>Missing PKCE verifier in session.</p><p><a href='/'>Return home</a></p>",
-                status=400,
+                status=HTTPStatus.BAD_REQUEST,
             )
 
         expected_nonce = session.get("nonce")
@@ -170,7 +176,7 @@ def create_app(settings: Settings) -> Flask:
             return html_page(
                 "Missing nonce",
                 "<p>Missing nonce in session.</p><p><a href='/'>Return home</a></p>",
-                status=400,
+                status=HTTPStatus.BAD_REQUEST,
             )
 
         try:
@@ -179,14 +185,14 @@ def create_app(settings: Settings) -> Flask:
             return html_page(
                 "Token endpoint error",
                 f"<p>{exc}</p><p><a href='/'>Return home</a></p>",
-                status=502,
+                status=HTTPStatus.BAD_GATEWAY,
             )
 
         if token_response.id_token is None:
             return html_page(
                 "Missing id_token",
                 "<p>Missing id_token in token response.</p><p><a href='/'>Return home</a></p>",
-                status=502,
+                status=HTTPStatus.BAD_GATEWAY,
             )
 
         # Validate ID token (JWT). Access token is treated as opaque.
@@ -202,7 +208,7 @@ def create_app(settings: Settings) -> Flask:
             return html_page(
                 "Invalid ID token",
                 f"<p>{exc}</p><p><a href='/'>Return home</a></p>",
-                status=400,
+                status=HTTPStatus.BAD_REQUEST,
             )
 
         # Fetch userinfo using the (opaque) access token.
@@ -212,7 +218,7 @@ def create_app(settings: Settings) -> Flask:
             return html_page(
                 "Userinfo error",
                 f"<p>{exc}</p><p><a href='/'>Return home</a></p>",
-                status=502,
+                status=HTTPStatus.BAD_GATEWAY,
             )
 
         # Fetch extended userinfo (user directory attributes).
@@ -262,7 +268,7 @@ def create_app(settings: Settings) -> Flask:
             return html_page(
                 "Token exchange not configured",
                 "<p>Set FEIDE_TOKEN_EXCHANGE_AUDIENCE.</p>" "<p><a href='/'>Return home</a></p>",
-                status=400,
+                status=HTTPStatus.BAD_REQUEST,
             )
         # If scope is empty, all available scopes will be requested.
         exchange_scope = settings.token_exchange_scope or ""
@@ -278,7 +284,7 @@ def create_app(settings: Settings) -> Flask:
             return html_page(
                 "Token exchange error",
                 f"<p>{exc}</p><p><a href='/'>Return home</a></p>",
-                status=502,
+                status=HTTPStatus.BAD_GATEWAY,
             )
 
         session["user"] = {
@@ -321,7 +327,7 @@ def create_app(settings: Settings) -> Flask:
             return html_page(
                 "Data source URL not configured",
                 "<p>DATASOURCE_API_URL is not configured.</p>",
-                status=500,
+                status=HTTPStatus.INTERNAL_SERVER_ERROR,
             )
 
         url = settings.datasource_api_url.rstrip("/") + "/me"
@@ -330,12 +336,12 @@ def create_app(settings: Settings) -> Flask:
             headers={"Authorization": f"Bearer {exchanged_token}"},
             timeout=5.0,
         )
-        if resp.status_code != 200:
+        if resp.status_code != HTTPStatus.OK:
             return html_page(
                 "Data source error",
                 f"<p>Status {resp.status_code}</p><pre>{resp.text}</pre>"
                 "<p><a href='/'>Return home</a></p>",
-                status=502,
+                status=HTTPStatus.BAD_GATEWAY,
             )
 
         try:
@@ -344,7 +350,7 @@ def create_app(settings: Settings) -> Flask:
             return html_page(
                 "Data source error",
                 f"<pre>{resp.text}</pre><p><a href='/'>Return home</a></p>",
-                status=502,
+                status=HTTPStatus.BAD_GATEWAY,
             )
 
         return render_json_page("Data source response", payload)
@@ -358,7 +364,7 @@ def create_app(settings: Settings) -> Flask:
             return html_page(
                 "Discovery failed",
                 f"<p>{exc}</p><p><a href='/'>Return home</a></p>",
-                status=500,
+                status=HTTPStatus.INTERNAL_SERVER_ERROR,
             )
         id_token_hint = session.get("id_token_hint")
         session.clear()
@@ -386,7 +392,7 @@ def create_app(settings: Settings) -> Flask:
         session.clear()
         return (
             "You have been logged out. " "<a href='/'>Log in again</a>.",
-            200,
+            HTTPStatus.OK,
         )
 
     return app
