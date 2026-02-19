@@ -8,6 +8,18 @@ This folder contains **three** runnable examples that demonstrate the Feide OIDC
 
 All examples are intentionally explicit and do **not** hide protocol steps behind a library.
 
+Together, `feide_login_full` and `feide_data_source_api` model a common integration scenario: a web app that signs users in with Feide, fetches userinfo, and (optionally) exchanges the access token to call a protected downstream API. The `feide_data_source_api` example represents that downstream service and shows how it validates JWT access tokens and performs its own token exchange to call Feide APIs on behalf of the user.
+
+## OIDC flow reference
+
+These examples implement the OAuth 2.0 Authorization Code flow with PKCE. If you want a concise
+reference for why the redirect happens and how the steps fit together, see:
+
+- OAuth 2.0 Authorization Code Grant (RFC 6749), Section 4.1: https://www.rfc-editor.org/rfc/rfc6749#section-4.1
+- PKCE (RFC 7636): https://www.rfc-editor.org/rfc/rfc7636
+
+A quick search on the net can be useful, e.g. "OAuth 2.0 authorization code flow", "OIDC authorization code flow" or "OAuth PKCE".
+
 ## Project layout
 
 - `src/feide_login_core/` – Shared, production-ready helpers used by both examples
