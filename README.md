@@ -36,15 +36,15 @@ A quick search on the net can be useful, e.g. "OAuth 2.0 authorization code flow
 
 ### Using .env and run scripts
 
-The `run_feide_*.zsh` scripts load a local `.env` file (not committed). Use `.env.example` as a
+The `run_feide_*.sh` scripts load a local `.env` file (not committed). Use `.env.example` as a
 template, copy it to `.env`, and fill in your secrets:
 
 ```bash
 cp .env.example .env
 ```
 
-Then run the examples with `./run_feide_login_full.zsh`, `./run_feide_login_simple.zsh`, or
-`./run_feide_data_source_api.zsh`.
+Then run the examples with `./run_feide_login_full.sh`, `./run_feide_login_simple.sh`, or
+`./run_feide_data_source_api.sh`.
 
 ## Configuration (all examples)
 
