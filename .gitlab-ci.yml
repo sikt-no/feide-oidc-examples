@@ -1,0 +1,54 @@
+image: python:3.13-slim
+
+stages:
+  - test
+  - mirror
+
+variables:
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+
+cache:
+  paths:
+    - .cache/pip
+
+.python-test:
+  stage: test
+  before_script:
+    - python -m pip install --upgrade pip
+    - python -m pip install -e ".[dev]"
+
+black:
+  extends: .python-test
+  script:
+    - black --check --diff src tests
+
+isort:
+  extends: .python-test
+  script:
+    - isort --check-only --diff src tests
+
+basedpyright:
+  extends: .python-test
+  script:
+    - basedpyright
+
+pytest:
+  extends: .python-test
+  script:
+    - pytest
+
+mirror_to_github:
+  stage: mirror
+  image: alpine:3.20
+  needs:
+    - black
+    - isort
+    - basedpyright
+    - pytest
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+  before_script:
+    - apk add --no-cache git
+  script:
+    - git remote add github https://oauth2:${GITHUB_PAT}@github.com/sikt-no/feide-oidc-examples.git
+    - git push --mirror github
