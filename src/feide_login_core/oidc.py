@@ -19,8 +19,6 @@ class OIDCError(RuntimeError):
     pass
 
 
-
-
 @dataclass(frozen=True)
 class OIDCClient:
     issuer: str
