@@ -6,6 +6,7 @@ stages:
 
 variables:
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+  GIT_DEPTH: "0"
 
 cache:
   paths:
@@ -51,6 +52,7 @@ mirror_to_github:
     - if: $CI_COMMIT_BRANCH == "main"
   before_script:
     - apk add --no-cache git
+    - git fetch --prune origin "+refs/heads/*:refs/heads/*" "+refs/tags/*:refs/tags/*"
   script:
     - git remote add github https://oauth2:${GITHUB_PAT}@github.com/sikt-no/feide-oidc-examples.git
-    - git push --mirror github
+    - git push --prune github +refs/heads/*:refs/heads/* +refs/tags/*:refs/tags/*
