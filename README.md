@@ -34,6 +34,11 @@ A quick search on the net can be useful, e.g. "OAuth 2.0 authorization code flow
 - A registered Feide OIDC client (client id / secret)
 - Redirect URI registered in Feide
 
+## Prerequisites (Feide Customer Portal)
+
+See `FEIDE_KUNDEPORTAL_SETUP.md` for a concise setup checklist covering the services (OIDC client),
+data source, and the required `.env` values.
+
 ### Using .env and run scripts
 
 The `run_feide_*.sh` scripts load a local `.env` file (not committed). Use `.env.example` as a
